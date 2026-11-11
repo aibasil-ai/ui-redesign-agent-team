@@ -1,0 +1,26 @@
+# Logs
+*.log
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Environment variables
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Machine-specific tool config
+.opencode/ui-redesign-kit/tools/.tool-node.cmd
+
+# Screenshot artifacts (per round)
+*/.artifacts/
