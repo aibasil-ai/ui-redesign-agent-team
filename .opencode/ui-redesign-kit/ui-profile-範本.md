@@ -129,7 +129,7 @@
 
 | 欄位 | 內容 |
 |---|---|
-| 路徑 | `<待填>`（例：`.opencode/worktree-procedures.md`；未填則 orchestrator 使用套件內建的通用 worktree 程序） |
+| 路徑 | `<待填>`（例：`.opencode/my-worktree-guide.md`）。**兩個選項**：①填自己專案的程序文件 → 以該文件為主體＋套件插入規則；②**留空** → orchestrator 依套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md` 執行（可直接修改該檔微調程序） |
 
 > 引用任何外部程序時，套件的四條插入規則（worktree 命名 `ui-<slug>`／分支 `ui-redesign/<slug>`、kit junction 插入與拆除、清除閘門）**一律適用**——詳見 orchestrator 指令的「worktree 程序」與「安裝指南.md」。
 

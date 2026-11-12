@@ -122,7 +122,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 ```
 階段 0 準備      讀 ui-profile（無→範本蒐集產生並經使用者確認）→ 確認設計素材與目標頁
-                → 詢問 worktree（依 ui-profile「流程程序文件」；未填則 §8.5 情境二）→ 啟動 dev server
+                → 詢問 worktree（依 ui-profile「流程程序文件」；未填則依套件內建 worktree-procedures.md）→ 啟動 dev server
 階段 1 基準建立  （以背景派工並行；瀏覽器工作錯開；環境不支援背景派工則序列化）
                 ui-redesign/functional-qa：盤點既有功能 → 補特徵測試（舊版先通過）→
                 寫回歸腳本 → 跑全部既有測試記基準線 → functional-baseline.md
@@ -145,7 +145,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 1. **讀 ui-profile**（見「開場鐵律」）。
 2. **確認設計素材與目標頁**：對照 ui-profile「設計素材」區塊與 `/ui-redesign` 輸入的「素材／目標頁面」。素材缺失或格式不明時，用 `question` 請使用者補件或裁決，**不推測、不虛構**。決定 `<slug>` 與本批次的頁面清單（建議每批一頁，多頁分批跑）。
-3. **詢問 worktree**：依 ui-profile「流程程序文件」決定程序（有填 → §8.5 情境一；未填 → §8.5 情境二），用 `question` 問使用者「要使用 git worktree 隔離區，還是直接在主工作區進行」。選「不要」時工作目錄就是主工作區，記錄比較基準 `git rev-parse HEAD` 供驗收對照。
+3. **詢問 worktree**：依 ui-profile「流程程序文件」決定程序（有填 → 情境一，以該文件為主體＋四條插入規則；未填 → 情境二，依套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md`），用 `question` 問使用者「要使用 git worktree 隔離區，還是直接在主工作區進行」。選「不要」時工作目錄就是主工作區，記錄比較基準 `git rev-parse HEAD` 供驗收對照。
 4. **開發前檢查主工作區**（兩種選擇都要做）：`git status --short` 檢查未 commit 變更；若已有與本任務無關的未 commit 變更，告知使用者並用 `question` 詢問是否仍要繼續。不繼續就結束。
 5. **啟動 dev server**（見「dev server 管理」）。就緒後記下 URL 與頁面進入前置的取得方式。
 
@@ -245,7 +245,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 | 工具用 Node 路徑失效（.tool-node.cmd 執行失敗） | 停止並回報；依 `.opencode/ui-redesign-kit/安裝指南.md` 重新產生；不自行改用其他 Node |
 | shot/diff/run 執行失敗 | 如實回報 stderr 與結束碼；同一工具連續失敗 3 次停止並回報使用者 |
 | worktree 同名目錄或分支已存在 | 不硬蓋：停下用 `question` 請使用者決定（換名稱或先處理殘留） |
-| worktree 建立/清除失敗 | 依 ui-profile「流程程序文件」＋§8.5 情境一的插入規則處理；未填則 §8.5 情境二；失敗如實回報殘留狀況 |
+| worktree 建立/清除失敗 | 依 ui-profile「流程程序文件」＋情境一的插入規則處理；未填則依套件內建 worktree-procedures.md；失敗如實回報殘留狀況 |
 | **清除時 kit junction 的 rmdir 失敗** | **中止清除並回報**（連結未拆則 `worktree remove` 可能跟隨刪除主工作區 kit）。判準：若路徑本來不存在 → 視為已拆除；若存在但 `rmdir` 失敗 → 中止。node_modules 的 rmdir 失敗（實體目錄或不存在路徑）可忽略 |
 | functional-qa 的 ask 被使用者拒絕 | **停止該項工作並回報**，不可自行改道；該功能改列「建議手動回歸檢查」 |
 | 需登入的頁面無法取得 storageState | 視覺／功能驗證受限：如實標註於報告，能驗的部分先驗，其餘列「建議手動回歸檢查」 |
@@ -261,7 +261,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 ## worktree 程序
 
-> 本套件隔離區約定目錄名為 `.worktrees/`。ui-profile 若填了「流程程序文件」→ 用情境一（該程序為主體＋四條插入規則）；未填 → 用情境二（完整通用程序）。
+> 本套件隔離區約定目錄名為 `.worktrees/`。ui-profile 若填了「流程程序文件」→ 用情境一（該程序為主體＋下列插入規則）；未填 → 用情境二（**讀取套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md`** 執行）。
 
 ### 情境一：ui-profile 填了「流程程序文件」
 
@@ -295,35 +295,13 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 > **警告（與 node_modules 同等級）**：kit junction 若被 `git worktree remove --force` 跟隨刪除，會把主工作區的 `.opencode/ui-redesign-kit`（agent、tools、ui-profile）**整包刪除**；該目錄常被 `.gitignore` 忽略（`.opencode/`），**無法從版控還原**。拆除 kit junction 的步驟不可省略、不可後置。
 
-### 情境二：ui-profile 未填「流程程序文件」→ 完整通用程序
+### 情境二：ui-profile 未填「流程程序文件」→ 依套件內建程序
 
-**建立**（以下指令除特別標註外，皆在主工作區根目錄執行）：
+未填時**讀取套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md`**（內容即通用建立／清除程序全文：命名約定、依賴處理、kit junction、清除閘門與資料安全警告），逐條執行之。
 
-1. `git rev-parse HEAD` 取得起點 sha，記為**比較基準**。
-2. 由任務產生英文小寫連字號 `<slug>`；**先檢查殘留**：`Test-Path .worktrees/ui-<slug>` 與 `git branch --list ui-redesign/<slug>`——已存在時**不硬蓋**，用 `question` 請使用者決定（換名或處理殘留）。
-3. `git worktree add .worktrees/ui-<slug> -b ui-redesign/<slug> [起點]`。
-4. 依賴（**例外：此步的 `npm ci` 以該 worktree 絕對路徑為 `workdir`**，timeout 600000；若原來已 junction node_modules，**必先拆除連結** `cmd /c rmdir .worktrees\ui-<slug>\node_modules` 再執行 `npm ci`，否則會覆寫到主工作區 node_modules）：
-   - 任務會改動 `package.json`／lockfile → 在 worktree 內以**專案環境**執行 `npm ci`。
-   - 否則 junction 主工作區 `node_modules`：
-
-     ```powershell
-     New-Item -ItemType Junction -Path .worktrees/ui-<slug>/node_modules -Target (Resolve-Path node_modules).Path
-     ```
-
-     （`-Target` 必須是**絕對路徑**；建立後以 `Test-Path .worktrees/ui-<slug>/node_modules` 下主要套件的存在性確認。）
-5. kit junction（指令同情境一第 2 條，目錄為 `.worktrees/ui-<slug>`），建立後 `Test-Path` 確認為 `True`。
-6. 複製 `.env`：`Copy-Item .env .worktrees/ui-<slug>/.env`。
-7. 記下 worktree **絕對路徑**與比較基準；**之後工作期間的 bash**（test/lint/build、dev server、產物與測試檔讀寫、developer 編輯、QA 瀏覽器工作、git add/commit、交付與清除前的 git status）**一律以該 worktree 絕對路徑為工作目錄（bash 的 `workdir` 參數）**；worktree 的建立、**清除全程**、commit 後的 merge 依「派工規則」例外清單在主工作區執行。
-
-**清除**（順序固定，**不可跳過拆連結**；步驟 1 在 worktree 內執行，其餘在主工作區根目錄執行）：
-
-1. **產物未 commit 時先經使用者明確同意丟棄**；在 worktree 內執行 `git status --short` 確認未追蹤產物並回報（空輸出時依「收尾檢查清單」第 3 點複查）。
-2. `cmd /c rmdir .worktrees\ui-<slug>\node_modules`（只拆 node_modules 連結；實體目錄或不存在的路徑會失敗，失敗可忽略）。
-3. `cmd /c rmdir .worktrees\ui-<slug>\.opencode\ui-redesign-kit`（拆 kit junction；**失敗即中止清除並回報**——連結未拆則下一步可能跟隨刪除主工作區 kit。判準：若路徑本來不存在 → 視為已拆除；若存在但 rmdir 失敗 → 中止）。
-4. `git worktree remove --force .worktrees/ui-<slug>`（--force 會刪除未追蹤檔）。
-5. `git worktree list` 確認；分支 `ui-redesign/<slug>` 依使用者決定保留或刪除（`git branch -d`／`-D` 為 ask，需使用者確認）。
-
-> 警告：若 node_modules 是 junction，直接 `git worktree remove --force` 在 Windows 上可能跟隨連結，把主工作區的 node_modules 內容一併刪除——**絕不可跳過第 2 步**；kit junction 同理（見情境一警告）。
+- **檔案不存在 → 套件安裝不完整：停止並回報使用者**（依安裝指南第 1 項整層複製），不可自行改用其他方式建立 worktree。
+- 使用者可直接修改內建檔案微調程序，修改後即生效（不需動 agent 檔案）。
+- 情境一的清除閘門與 junction 順序規則**已寫在內建檔案內**，執行時以檔案為準。
 
 ## 交付規則（階段 5）
 
