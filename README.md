@@ -38,7 +38,8 @@
 UI_Redesign_Agent_Team/
 ├── README.md、LICENSE、.gitignore
 ├── docs/
-│   └── 2026-11-11-UI重構Agent團隊-設計書.md    ← 完整設計文件（權限逐條、流程、異常處理）
+│   ├── 2026-11-11-UI重構Agent團隊-設計書.md    ← 完整設計文件（權限逐條、流程、異常處理）
+│   └── OpenCode_Web_UI_Agent_Orchestration_Guide.md  ← ChatGPT 討論稿（設計前的研究筆記）
 └── .opencode/                                 ← ★ 搬家＝複製這個整層到目標前端專案
     ├── agents/ui-redesign/                    ← 6 個 agent（OpenCode V2 frontmatter＋permissions）
     └── ui-redesign-kit/
@@ -148,7 +149,7 @@ UI_Redesign_Agent_Team/
 
 ## 設計文件
 
-完整的設計規格（九節架構、七階段流程、逐條權限模型、異常處理表、審核軌跡）見 [`docs/2026-11-11-UI重構Agent團隊-設計書.md`](docs/2026-11-11-UI重構Agent團隊-設計書.md)。
+完整的設計規格（九節架構、七階段流程、逐條權限模型、異常處理表、審核軌跡）見 [`docs/2026-11-11-UI重構Agent團隊-設計書.md`](docs/2026-11-11-UI重構Agent團隊-設計書.md)；設計前的 ChatGPT 討論稿（OpenCode 編排研究筆記）見 [`docs/OpenCode_Web_UI_Agent_Orchestration_Guide.md`](docs/OpenCode_Web_UI_Agent_Orchestration_Guide.md)。
 
 ## License
 
