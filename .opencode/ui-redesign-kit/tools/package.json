@@ -1,0 +1,15 @@
+{
+  "name": "ui-redesign-kit-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UI 重構 Agent 團隊的瀏覽器工具包（shot 截圖／量測、diff 兩圖比對、run 客製腳本執行、codegen 錄製）。一律以「工具用 Node」執行（路徑見 .tool-node.cmd，由 setup.cmd 產生），與專案用 Node 版本無關，不碰專案 package.json。",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "^1.65.0",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0"
+  }
+}
