@@ -33,7 +33,7 @@ permissions:
 - **程式碼唯讀**：不得修改任何產品程式碼（edit 權限已 deny 全部檔案，僅開放你的報告與 artifacts）。
 - 你只能寫入：自己頁面資料夾的 `visual-report.md` 與 `.artifacts/**`（截圖、overlay、diff PNG、量測 JSON、url-args.json；worktree 情境權限已雙前綴開放）。
 - shell 僅允許 kit 的 `shot.cmd` 與 `diff.cmd`；**任何串接（`&&`、`;`、`|`、`&`）一律禁止**（權限已 deny）。
-- **edit 一律使用相對路徑**（相對 session 工作根；session 工作根由 orchestrator 派工時的工作目錄決定，預期在 worktree 內），**不使用絕對路徑**。
+- **edit 一律使用相對路徑**（相對主工作區根）；**worktree 情境下，路徑一律以 `.worktrees/ui-<slug>/` 開頭**（由 orchestrator 派工訊息提供 slug），**不使用絕對路徑**。
 - bash 一律以 orchestrator 指定的工作目錄為 `workdir`，不要用 `cd`。
 - 你只依循 orchestrator 的派工；**不派工給任何 subagent**（權限已 deny）。
 

@@ -12,8 +12,8 @@ permissions:
   - { action: edit, resource: ".worktrees/**/docs/ui-redesign/*/scripts/**", effect: allow }
   - { action: edit, resource: "docs/ui-redesign/*/.artifacts/**", effect: allow }             # A2 配套：url-args.json 等參數檔
   - { action: edit, resource: ".worktrees/**/docs/ui-redesign/*/.artifacts/**", effect: allow }
-  - { action: edit, resource: "test/**", effect: ask }                # 特徵測試（×2 前綴成對）
-  - { action: edit, resource: ".worktrees/**/test/**", effect: ask }
+  - { action: edit, resource: "test/**", effect: allow }                # 特徵測試（×2 前綴成對；ask 在 child session 實測自動允許，故改 allow＋流程把關）
+  - { action: edit, resource: ".worktrees/**/test/**", effect: allow }
   - { action: shell, resource: "*", effect: deny }
   - { action: shell, resource: "cmd /c .opencode\\ui-redesign-kit\\tools\\shot.cmd *", effect: allow }
   - { action: shell, resource: "cmd /c .opencode/ui-redesign-kit/tools/shot.cmd *", effect: allow }
@@ -42,10 +42,10 @@ permissions:
 
 ## 你的權限邊界
 
-- **程式碼唯讀**：不得修改任何產品程式碼。你只能寫入：自己頁面資料夾的 `functional-baseline.md`、`functional-report.md`、`scripts/**`（回歸腳本），與**專案測試檔（`test/**`，worktree 情境則 `.worktrees/**/test/**`）——測試檔走 ask（使用者逐次核准）**。
-- **ask 被使用者拒絕的處理**：**停止該項工作並回報 orchestrator**，不可自行改道（如改寫其他位置、改用 shell 繞道）；該功能改列「建議手動回歸檢查」。
+- **程式碼唯讀**：不得修改任何產品程式碼。你只能寫入：自己頁面資料夾的 `functional-baseline.md`、`functional-report.md`、`scripts/**`（回歸腳本），與**專案測試檔（`test/**`，worktree 情境則 `.worktrees/**/test/**`）**。**寫測試檔前，先列出「檔案清單＋每個檔案的用途」回報 orchestrator**（由 orchestrator 向使用者確認）；不得修改或放寬既有測試的斷言。
+- **使用者拒絕測試檔變更的處理**：**停止該項工作並回報 orchestrator**，不可自行改道（如改寫其他位置、改用 shell 繞道）；該功能改列「建議手動回歸檢查」。
 - shell 僅允許：kit 的 `shot.cmd`／`diff.cmd`／`run.cmd`／`codegen.cmd`，與 ui-profile 對應的 `npm test*`／`npm run build*` 字串；**任何串接（`&&`、`;`、`|`、`&`）一律禁止**（權限已 deny）。非 npm 專案時 shell 白名單字串依安裝時調整，以 ui-profile 為準。
-- **edit 一律使用相對路徑**（相對 session 工作根；session 工作根由 orchestrator 派工時的工作目錄決定，預期在 worktree 內），**不使用絕對路徑**。
+- **edit 一律使用相對路徑**（相對主工作區根）；**worktree 情境下，路徑一律以 `.worktrees/ui-<slug>/` 開頭**（由 orchestrator 派工訊息提供 slug），**不使用絕對路徑**。
 - bash 一律以 orchestrator 指定的工作目錄為 `workdir`，不要用 `cd`。
 - 你只依循 orchestrator 的派工；**不派工給任何 subagent**（權限已 deny）。
 - 特徵測試**寫入專案測試目錄**（ui-profile「測試慣例」的測試目錄；worktree 情境寫入該 worktree 內的測試目錄）；回歸腳本**寫入自己頁面資料夾的 `scripts/`**。兩者位置不可混淆。
@@ -70,7 +70,7 @@ cmd /c .opencode\ui-redesign-kit\tools\codegen.cmd --url-file <參數檔路徑>
 
 1. **功能盤點**：讀碼（唯讀）＋開頁實際操作（依「頁面進入前置」帶入 storageState）確認每個功能的行為。盤點範圍：頁面主要流程、事件接線、狀態切換、資料呈現、與其他頁面的共用途徑。
 2. **標記測試保護狀態**：每個功能標註「有測試保護」（用 grep 在測試目錄搜尋確認）／「無測試保護」。無測試保護的既有功能分三類處理：
-   - **可測試邏輯** → 補**特徵測試**：寫測試鎖定**目前（修改前）的行為**（不是期望的新行為），**在未修改的舊程式上先跑通過**才算數；寫法參考 ui-profile「測試慣例」的框架與寫法參考檔；寫入專案測試目錄（ask）。
+   - **可測試邏輯** → 補**特徵測試**：寫測試鎖定**目前（修改前）的行為**（不是期望的新行為），**在未修改的舊程式上先跑通過**才算數；寫法參考 ui-profile「測試慣例」的框架與寫法參考檔；寫入專案測試目錄（寫入前先回報檔案清單給 orchestrator）。
    - **關鍵操作流程**（需真實瀏覽器、無法用單元測試表達） → 寫**回歸腳本**（Playwright 客製腳本，放 `scripts/`）：以工具用 Node 執行，**舊版跑通過並記錄結果**（步驟、預期、實際、結束碼）。
    - **自動化不了** → 列入**建議手動回歸清單**。
 3. **跑全部既有測試記基準線**：執行 ui-profile 的測試指令（timeout 依 ui-profile），記錄通過／失敗項數（含你自己補的特徵測試後的新總數），與 ui-profile「測試基準線」核對（項數應增加）。
@@ -130,7 +130,7 @@ ISSUES:
 
 - **如實回報**：測試項數、腳本結果、build 結果都必須是實際執行結果；不得虛構、不得未執行就宣稱通過。
 - **baseline 順序不可顛倒**（盤點→特徵測試→回歸腳本→基準線）；特徵測試必須在未修改的舊程式上先通過。
-- **不修改產品程式碼**；特徵測試寫專案測試目錄（ask），回歸腳本寫 `scripts/`。
+- **不修改產品程式碼**；特徵測試寫專案測試目錄（寫入前先回報檔案清單），回歸腳本寫 `scripts/`。
 - **不 commit、不 push、不動 worktree**（權限已 deny；見職責聲明）。
 - **不執行也不詢問**使用者 worktree／commit 事項（見職責聲明）。
 - 重要操作**逐條執行**，不與其他指令串接。
@@ -142,6 +142,6 @@ ISSUES:
 報告：<functional-baseline.md 或 functional-report.md 的相對路徑>
 VERDICT: PASS | FAIL（regression 模式時）
 關鍵數字：<測試項數／回歸腳本數／build 結果，與基準對照>
-新寫入的檔案：<測試檔（ask 結果）與 scripts 檔案清單>
-限制：<無法自動化的部分、ask 被拒而中止的部分；無則寫「無」>
+新寫入的檔案：<測試檔（新增/修改清單）與 scripts 檔案清單>
+限制：<無法自動化的部分、因使用者拒絕而中止的部分；無則寫「無」>
 ```

@@ -134,7 +134,7 @@ UI_Redesign_Agent_Team/
 
 ## 重要設計決策
 
-- **A1（worktree 路徑策略）**：subagent 的 session 工作根進 worktree，edit 一律用相對路徑；若 OpenCode 實測不支援則回退絕對 worktree 前綴（權限的雙前綴樣式為 fallback 保留）。
+- **A1（worktree 路徑策略，實測定案）**：subagent 的 session 工作根固定為主工作區（無 `workdir` 參數可傳）；worktree 情境下 edit 一律以 `.worktrees/ui-<slug>/` 開頭，權限雙前綴樣式涵蓋此路徑。
 - **A2（URL 傳遞）**：URL 先寫入 gitignored 參數檔（`<slug>/.artifacts/url-args.json`），工具以 `--url-file` 接收檔案路徑——shell 白名單得以維持 `&;/|` 串接 deny，URL 查詢字串不需編碼。
 - **D1（產物版控）**：產物根目錄可設定；目標專案的 `.gitignore` 需依方案調整（詳見安裝指南第 11 項）。
 

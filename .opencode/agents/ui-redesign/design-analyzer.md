@@ -39,7 +39,7 @@ permissions:
 - 你只能寫入**自己頁面資料夾的四個檔案**：`design-spec.md`、`design-tokens.json`、`component-mapping.md`、`pending-questions.md`（位於 `<產物根目錄>/<slug>/`；worktree 情境則在 `.worktrees/…/<產物根目錄>/<slug>/`，權限已雙前綴開放）。
 - shell 僅允許 kit 的 `shot.cmd`（量測模式）；**任何串接（`&&`、`;`、`|`、`&`）一律禁止**（權限已 deny）。
 - `webfetch` 允許：設計素材若為網址型 HTML 原型或規格文件，可用 webfetch 讀取內容作為交叉驗證（唯讀）。
-- **edit 一律使用相對路徑**（相對 session 工作根；session 工作根由 orchestrator 派工時的工作目錄決定，預期在 worktree 內），**不使用絕對路徑**。
+- **edit 一律使用相對路徑**（相對主工作區根）；**worktree 情境下，路徑一律以 `.worktrees/ui-<slug>/` 開頭**（由 orchestrator 派工訊息提供 slug），**不使用絕對路徑**。
 - bash 一律以 orchestrator 指定的工作目錄為 `workdir`，不要用 `cd`。
 
 ## 工具呼叫格式（逐字）

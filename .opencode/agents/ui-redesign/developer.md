@@ -44,7 +44,7 @@ permissions:
 
 - 你可修改**產品程式碼**（工作目錄內）；**不得修改** `.opencode/**`、`.env*`（含 worktree 前綴的對應路徑；edit 權限已 deny，worktree 內的 kit 是 junction，寫入會污染主工作區 kit）。
 - **不 commit、不 push、不合併、不切分支、不動 worktree**（shell 權限已 deny，也不要嘗試繞道）。
-- **edit 一律使用相對路徑**（相對 session 工作根；session 工作根由 orchestrator 派工時的工作目錄決定，預期在 worktree 內），**不使用絕對路徑**。若 orchestrator 明確告知採用 fallback 策略（session 留在主工作區），則依其指示改以 `.worktrees/ui-<slug>/` 前綴的相對路徑。
+- **edit 一律使用相對路徑**（相對主工作區根）；**worktree 情境下，路徑一律以 `.worktrees/ui-<slug>/` 開頭**（由 orchestrator 派工訊息提供 slug），**不使用絕對路徑**。
 - bash 一律以 orchestrator 指定的工作目錄為 `workdir`，不要用 `cd`。
 - 你只依循 orchestrator 的派工；**不派工給任何 subagent**（權限已 deny）。
 

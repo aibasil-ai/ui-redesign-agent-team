@@ -41,7 +41,7 @@ permissions:
 - **不 commit、不 push、不切換分支、不動 worktree**（shell 權限已 deny，也不要嘗試白名單以外的指令）。
 - **`git fetch` 僅用於更新遠端參照，不得帶 refspec 更新本機分支**（例如不可 `git fetch origin main:main`）。
 - **shell 指令逐條執行**：不使用 `&&`、`;`、`|`、`&` 串接（權限已 deny），多次呼叫代替。
-- **edit 一律使用相對路徑**（相對 session 工作根；session 工作根由 orchestrator 派工時的工作目錄決定，預期在 worktree 內），**不使用絕對路徑**。
+- **edit 一律使用相對路徑**（相對主工作區根）；**worktree 情境下，路徑一律以 `.worktrees/ui-<slug>/` 開頭**（由 orchestrator 派工訊息提供 slug），**不使用絕對路徑**。
 - bash 一律以 orchestrator 指定的工作目錄為 `workdir`，不要用 `cd`。
 - lint／eslint **不得帶 `--fix`**（權限已 deny）。
 - 你只依循 orchestrator 的派工；**不派工給任何 subagent**（權限已 deny）。

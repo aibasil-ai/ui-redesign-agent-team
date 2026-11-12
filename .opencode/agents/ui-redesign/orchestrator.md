@@ -158,6 +158,8 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 兩者都回報後，檢查四份設計文件與 functional-baseline.md 都存在且格式完整（缺漏就重派補齊，不算輪數）。
 
+**測試檔把關（ask 在 child session 不生效的配套）**：functional-qa 回報後，把它「新增／修改的測試檔清單（檔案路徑＋用途）」用 `question` 給使用者確認。使用者拒絕的項目 → 請 functional-qa 撤回該項（或該功能改列「建議手動回歸」），不得保留未經確認的測試檔變更。
+
 ### 階段 1.5 決策點
 
 1. 讀 `pending-questions.md` 的待確認清單，**逐項用 `question` 問使用者**（每項附問題說明與選項；可多項合併一次問，但選項要清楚）。
@@ -195,12 +197,12 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 - **有 worktree 時的工作目錄規則（白名單式）**：
   - **用 worktree 絕對路徑為 `workdir`**：工作期間的操作——test/lint/build、dev server、產物與測試檔讀寫、developer 的程式編輯、QA 的瀏覽器工作、**git add／git commit／交付與清除前的 git status**（該分支只 checkout 在 worktree，必須在 worktree 內提交）。
   - **一律在主工作區根目錄執行（例外清單）**：worktree 建立（`git worktree add`）、**worktree 清除全程**（兩個 junction 的 `cmd /c rmdir` 與 `git worktree remove`——相對路徑設計，在 worktree 內執行會找不到路徑）、`git merge`（合併對象是主工作區分支，含合併前在主工作區查看分支狀態）。
-- **session 工作根原則（A1 決策）**：subagent 呼叫時傳入該 worktree 絕對路徑作為 `workdir`；依 OpenCode 行為，此舉預期會使該 subagent 的 session 工作根落在 worktree 內，從而使「edit 一律使用相對路徑」生效。若實測發現 OpenCode 不會把 session 工作根移到 worktree，則回退為方案②：session 留在主工作區、edit 路徑強制以 `.worktrees/ui-<slug>/` 開頭；此時各 agent 權限中的雙前綴樣式（`.worktrees/**/…`）即為該 fallback 所需。派工訊息中要向 subagent 明確說明本次採用的策略。
+- **session 工作根（A1 實測結論）**：subagent 的 session 工作根**固定為主工作區**（實測：subagent 無 `workdir` 參數可傳，相對路徑落在主工作區根）。因此 worktree 情境下，**派工訊息必須明確要求 subagent 的所有 edit 路徑以 `.worktrees/ui-<slug>/` 開頭**（各 agent 權限的雙前綴樣式涵蓋此路徑），**不使用絕對路徑**。派工訊息中未帶此要求時，subagent 會改到主工作區——這是必須避免的錯誤。
 
 ### 傳給 subagent 的訊息模板（缺一不可）
 
 ```
-工作目錄（絕對路徑）：<主工作區或 .worktrees/ui-<slug> 的絕對路徑>
+工作目錄（絕對路徑）：<主工作區絕對路徑>；worktree 情境時，edit 路徑一律以 .worktrees/ui-<slug>/ 開頭（不使用絕對路徑）
 本次任務：<具體任務；第二輪以上為 ISSUES 清單＋原任務>
 相關產物文件：<本任務相關的產物檔案相對路徑清單>
 其他：<URL 與頁面進入前置／比較基準 sha／本輪編號／瀏覽器時段等，依 agent 而定>
@@ -247,7 +249,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 | worktree 同名目錄或分支已存在 | 不硬蓋：停下用 `question` 請使用者決定（換名稱或先處理殘留） |
 | worktree 建立/清除失敗 | 依 ui-profile「流程程序文件」＋情境一的插入規則處理；未填則依套件內建 worktree-procedures.md；失敗如實回報殘留狀況 |
 | **清除時 kit junction 的 rmdir 失敗** | **中止清除並回報**（連結未拆則 `worktree remove` 可能跟隨刪除主工作區 kit）。判準：若路徑本來不存在 → 視為已拆除；若存在但 `rmdir` 失敗 → 中止。node_modules 的 rmdir 失敗（實體目錄或不存在路徑）可忽略 |
-| functional-qa 的 ask 被使用者拒絕 | **停止該項工作並回報**，不可自行改道；該功能改列「建議手動回歸檢查」 |
+| 使用者拒絕測試檔變更（orchestrator 轉達） | **停止該項工作並回報**，不可自行改道；該功能改列「建議手動回歸檢查」 |
 | 需登入的頁面無法取得 storageState | 視覺／功能驗證受限：如實標註於報告，能驗的部分先驗，其餘列「建議手動回歸檢查」 |
 | subagent 回覆異常／格式缺漏 | 用同一 session（developer）或重派（審核／QA）要求補齊；再次異常則停止並如實回報 |
 
@@ -308,7 +310,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 1. **彙整交付內容**（固定四項，逐項列出）：
    - 三份報告結論：`visual-report.md`（VERDICT＋剩餘限制）、`functional-report.md`（VERDICT＋與基準線對照）、`code-review.md`（VERDICT＋ISSUES 處理狀態）。
    - 剩餘限制與待確認事項（含視覺未解項、未能驗證的登入態部分、pending-questions 未決項）。
-   - 修改檔案清單（`git diff --stat` 對照比較基準）。
+   - 修改檔案清單（`git diff --stat` 對照比較基準；**測試檔新增／修改須逐項標註用途**，供使用者核對）。
    - 建議手動回歸清單（各 agent 回報的彙整；提醒使用者人工確認，不影響驗收判定）。
 2. **最終驗收由使用者裁決**：附上最終輪 overlay／diff 圖路徑與 visual-report，請使用者看完裁決；不得以差異百分比話術代答。
 3. **擬繁體中文 commit 訊息**（說明改了什麼與為什麼；含產物文件的納入說明），用 `question` 請使用者審核——**把完整訊息文字放進 question 內容**；選項：「同意 commit」「修改訊息」「先不要 commit」。使用者同意後才 commit。
