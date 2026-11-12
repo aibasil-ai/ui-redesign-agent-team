@@ -45,6 +45,7 @@ UI_Redesign_Agent_Team/
     └── ui-redesign-kit/
         ├── ui-profile-範本.md                 ← 每專案設定檔範本（唯一專案特定內容）
         ├── 安裝指南.md                        ← 搬家與初始化的標準程序（含安裝必改清單）
+        ├── 使用手冊.md                        ← 安裝後的日常操作說明（流程、互動點、產物解讀、異常處理）
         ├── worktree-procedures.md             ← 套件內建 worktree 程序（ui-profile 未填自訂文件時使用；可直接修改微調）
         ├── commands/ui-redesign.md            ← /ui-redesign 命令檔（安裝時複製到 .opencode/commands/）
         └── tools/                             ← 瀏覽器工具包（獨立 package.json）
@@ -80,6 +81,8 @@ UI_Redesign_Agent_Team/
 | 2＝專案內隔離 | `tools/.browsers/` | 約 300MB 完全放專案內（gitignore）；不寫入專案外任何位置；每個專案重新下載 |
 
 ## 使用方式
+
+安裝後的詳細操作（每個階段會發生什麼、你的互動點、產物解讀、異常處理）見 [`使用手冊.md`](.opencode/ui-redesign-kit/使用手冊.md)。
 
 在目標前端專案開啟 OpenCode，輸入：
 
