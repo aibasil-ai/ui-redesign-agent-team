@@ -1,6 +1,6 @@
 # ui-profile 範本（UI 重構 Agent 團隊 — 每專案設定檔）
 
-> **用途**：本檔是 `ui-profile.md` 的範本。搬移套件到新專案後，**複製本檔為 `.opencode/ui-redesign-kit/ui-profile.md` 並逐欄填寫**（或第一次執行 `/ui` 時由 orchestrator 依本範本提綱向你蒐集後代產）。
+> **用途**：本檔是 `ui-profile.md` 的範本。搬移套件到新專案後，**複製本檔為 `.opencode/ui-redesign-kit/ui-profile.md` 並逐欄填寫**（或第一次執行 `/ui-redesign` 時由 orchestrator 依本範本提綱向你蒐集後代產）。
 > **填寫原則**：
 > - 範例值僅供參考，**一律換成你專案的實況**；不要照抄範例。
 > - agent 本體不含任何專案資訊，**這份檔案是團隊唯一讀取專案設定的地方**；留 `<待填>` 就會在流程中卡住，請填完整。
