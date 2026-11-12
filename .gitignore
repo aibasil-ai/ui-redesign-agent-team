@@ -22,5 +22,8 @@ Thumbs.db
 # Machine-specific tool config
 .opencode/ui-redesign-kit/tools/.tool-node.cmd
 
+# Playwright browsers (project-local install option)
+.opencode/ui-redesign-kit/tools/.browsers/
+
 # Screenshot artifacts (per round)
 */.artifacts/
