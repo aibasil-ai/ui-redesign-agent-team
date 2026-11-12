@@ -46,6 +46,7 @@ UI_Redesign_Agent_Team/
         ├── ui-profile-範本.md                 ← 每專案設定檔範本（唯一專案特定內容）
         ├── 安裝指南.md                        ← 搬家與初始化的標準程序（含安裝必改清單）
         ├── 使用手冊.md                        ← 安裝後的日常操作說明（流程、互動點、產物解讀、異常處理）
+        ├── 驗測清單.md                        ← 三層驗測程序（套件層自動／OpenCode 層手動／端到端試跑）
         ├── worktree-procedures.md             ← 套件內建 worktree 程序（ui-profile 未填自訂文件時使用；可直接修改微調）
         ├── commands/ui-redesign.md            ← /ui-redesign 命令檔（安裝時複製到 .opencode/commands/）
         └── tools/                             ← 瀏覽器工具包（獨立 package.json）
@@ -150,6 +151,10 @@ UI_Redesign_Agent_Team/
 - [OpenCode](https://opencode.ai/)（支援 V2 agent 格式：子資料夾命名空間、有序 `permissions`）
 - 目標前端專案（Git 管理）
 - **工具用 Node ≥ 20**（建議 v24；與專案 Node 版本無關，兩者分離運作）
+
+## 驗測
+
+工具是否運作正確？依三層驗測程序確認（套件層自動腳本、OpenCode 層手動檢查、端到端試跑）：見 [`驗測清單.md`](.opencode/ui-redesign-kit/驗測清單.md)。
 
 ## 設計文件
 
