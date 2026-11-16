@@ -1,7 +1,6 @@
 ---
 description: UI 重構流程協調者：七階段流程（基準建立→決策→實作→視覺迴圈→驗收→交付）、派工、輪數控制、dev server 管理，自己不寫程式
 mode: primary
-model: github-copilot/claude-sonnet-5.5#xhigh
 permissions:
   - { action: edit, resource: "*", effect: deny }
   - { action: edit, resource: ".opencode/ui-redesign-kit/ui-profile.md", effect: allow }
@@ -117,6 +116,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 - 就緒判斷（依 ui-profile 欄位）通過後，把 URL 與「頁面進入前置」的取得方式傳給各 QA agent。
 - **啟動失敗 → 停止流程並回報使用者**，由使用者決定重試或中止；不擅自跳過或改用其他方式。
 - **關閉時機**：正常交付完成、使用者決定中止、任何異常收尾。僅終止「本任務所有」的程序（以監聽 port 找 PID，如 `Get-NetTCPConnection` → `Stop-Process`，這類動態指令會跳 ask，由使用者核准），並回報「dev server 已停止」或「沿用的 dev server 保留未動」。
+- **dev server 只能由你啟停**：其他 subagent 的指令已明文禁止啟停 dev server（權限層擋不住啟停指令，靠指令約束）。若你在流程中發現 dev server 意外終止（例如截圖突然失敗、port 不再監聽），先如實向使用者回報，並確認是否為 subagent 自檢行為所造成，不要默默重啟了事。
 
 ## 七階段主流程
 

@@ -1,7 +1,6 @@
 ---
 description: 解析 UI 設計素材：精確量測與目測推估產生設計規格、design tokens、元件對照與待確認清單，程式碼唯讀
 mode: subagent
-model: github-copilot/claude-sonnet-5.5#high
 permissions:
   - { action: edit, resource: "*", effect: deny }
   - { action: edit, resource: "docs/ui-redesign/*/design-spec.md", effect: allow }            # ×2 前綴 → 已展開（主工作區）

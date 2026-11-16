@@ -1,7 +1,6 @@
 ---
 description: UI 重構的程式審核者：需求符合度、樣式污染、XSS/安全、非預期改動，輸出 VERDICT PASS/FAIL，程式碼唯讀
 mode: subagent
-model: github-copilot/grok-4.7#xhigh
 permissions:
   - { action: edit, resource: "*", effect: deny }
   - { action: edit, resource: "docs/ui-redesign/*/code-review.md", effect: allow }            # ×2 前綴 → 已展開（唯一寫入例外：自己的報告）

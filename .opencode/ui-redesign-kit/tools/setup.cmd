@@ -25,7 +25,8 @@ echo.
 rem ── 步驟 1／6：取得工具用 Node（ui-profile 優先；未指定則探測並提示確認）──
 echo [步驟 1／6] 讀取 ui-profile 的「工具用 Node 絕對路徑」
 if exist "%PROFILE_FILE%" (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=Get-Content -Raw -LiteralPath '%PROFILE_FILE%'; $lines=($t -split '\r?\n') | Where-Object { $_ -match '工具用' -and $_ -match 'node\.exe' }; foreach($l in $lines){ $m=[regex]::Match($l,'[A-Za-z]:\\[^\s，,；;|`]*node\.exe','IgnoreCase'); if($m.Success){ Write-Output $m.Value; break } }" > "%NODE_TEMP_FILE%"
+  rem 路徑可能含空白（例：nvm 安裝於 "…\Author Software\nvm\…"），字元類別不可排除空白；以 lazy 匹配取到第一個 node.exe 為止
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=Get-Content -Raw -LiteralPath '%PROFILE_FILE%'; $lines=($t -split '\r?\n') | Where-Object { $_ -match '工具用' -and $_ -match 'node\.exe' }; foreach($l in $lines){ $m=[regex]::Match($l,'[A-Za-z]:\\[^，,；;|`]+?node\.exe','IgnoreCase'); if($m.Success){ Write-Output $m.Value; break } }" > "%NODE_TEMP_FILE%"
   set /p NODE_EXE=<"%NODE_TEMP_FILE%"
 )
 if defined NODE_EXE set "NODE_SOURCE=ui-profile"

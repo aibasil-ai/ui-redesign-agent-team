@@ -1,7 +1,6 @@
 ---
 description: 功能基準與回歸雙模式：建立功能盤點、特徵測試、回歸腳本與基準線，改版後重跑驗證功能完整
 mode: subagent
-model: github-copilot/grok-4.7#high
 permissions:
   - { action: edit, resource: "*", effect: deny }
   - { action: edit, resource: "docs/ui-redesign/*/functional-baseline.md", effect: allow }    # ×2 前綴 → 已展開（主工作區）
@@ -61,6 +60,7 @@ cmd /c .opencode\ui-redesign-kit\tools\codegen.cmd --url-file <參數檔路徑>
 - **URL 參數檔契約**：需要網址／storageState 的工具一律以 `--url-file` 傳參數檔（`<產物根目錄>/<slug>/.artifacts/url-args.json`，內容單一 JSON `{"url": "…", "storageState": "<可選>"}`）；依 ui-profile「頁面進入前置」決定是否帶 storageState。
 - **客製腳本契約**：`run.cmd` 只接受位於 `<產物根目錄>/<slug>/scripts/` 子樹（worktree 內對應路徑亦可）的腳本，以「工具用 Node」執行——**腳本具備完整 Node 能力（可寫檔）**。因此規定：**首次執行任一腳本之前，先在回覆中列出其路徑與用途**；腳本本身也不得寫入允許集合之外的任何位置（不得碰 `.env*`、`.opencode/**`、產品程式碼）。
 - 工具／測試／build 失敗時如實回報 stderr 與結束碼；同一工具連續失敗 3 次即停止並回報 orchestrator。
+- **不得啟動、停止或重啟 dev server**：dev server 由 orchestrator 專責管理。回歸腳本要用頁面時，一律使用 orchestrator 提供的 URL；URL 不可用就回報，不要自行起站或關站。
 
 ## 雙模式（兩次登場）
 

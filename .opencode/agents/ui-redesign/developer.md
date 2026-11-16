@@ -1,7 +1,6 @@
 ---
 description: 依設計規格實作 UI：優先重用既有元件與邏輯、回歸防護、分批小步修改，不自行 commit
 mode: subagent
-model: github-copilot/gemini-3.8-flash#high
 permissions:
   - { action: edit, resource: "*", effect: allow }
   - { action: edit, resource: ".opencode/**", effect: deny }
@@ -113,6 +112,7 @@ orchestrator 會提供：
 - **不得以任何 shell 方式寫入 `.env*` 與 `.opencode/**`**：重新導向、`Set-Content`、腳本、程式輸出等一律違規（edit 權限已 deny；shell 繞道屬多層防護的一環，被抓到即如實記錄）。
 - **禁止**的指令（權限已 deny，正文再列一次是防手滑）：`git commit`、`git push`、`git merge`、`git rebase`、`git reset`、`git checkout`、`git switch`、`git worktree`、`git clean`、`git stash`；`npm ci`、`npm install`、`npm i`、`npm uninstall`、`npm update`、`npm prune`、`npm audit fix`；`yarn`、`pnpm`；**任何 `--fix`**。
 - 依賴操作一律由 orchestrator 處理；任務確實需要變更依賴時，**停止**並在回報中醒目說明「是否改動 package.json：是」。
+- **不得啟動、停止或重啟 dev server**（含「以 port 查 PID 再 `Stop-Process`」這種自檢手法）：dev server 由 orchestrator 專責管理。你需要看頁面時，直接用 orchestrator 給的 URL；該 URL 不可用就回報 orchestrator，不要自行起站或關站（2026-11-16 實測事故：developer 自檢時起站、再按 port 找 PID 停止，誤殺了 orchestrator 的 dev server）。
 - 重要操作**逐條執行**，不與其他指令串接（`&&`、`;`、`|`、`&`）。
 
 ## 收到 ISSUES（第二輪以上）

@@ -1,7 +1,6 @@
 ---
 description: 截圖比對設計素材與實際畫面：overlay／diff 判讀、嚴重度分類，產出視覺差異報告，不修改 UI
 mode: subagent
-model: github-copilot/gemini-3.8-flash#high
 permissions:
   - { action: edit, resource: "*", effect: deny }
   - { action: edit, resource: "docs/ui-redesign/*/visual-report.md", effect: allow }          # ×2 前綴 → 已展開（主工作區）
