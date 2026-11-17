@@ -4,7 +4,7 @@
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Node](https://img.shields.io/badge/tools--node-%3E%3D20-green)
 
-一組 **6 個 OpenCode V2 Agent**（`ui-redesign/` 前綴）＋**可攜工具套件**（`ui-redesign-kit`），專門處理「UI 設計素材 → 既有前端專案還原實作」：把設計公司提供的 PNG/JPEG 設計圖、靜態 HTML 原型、規格文件，還原成既有前端專案的高保真 UI——**功能、事件、API 契約、資料流原則上全部保留；功能取捨一律由使用者裁決**。
+一組 **6 個 OpenCode V2 Agent**（`ui-redesign/` 前綴）＋**可攜工具套件**（`ui-redesign-kit`），專門處理「UI 設計素材 → 既有前端專案還原實作」：把設計公司提供的 PNG/JPEG 設計圖、靜態 HTML 原型、規格文件，還原成既有前端專案的高保真 UI——**功能、事件、API 契約、資料流原則上全部保留；功能取捨（含設計稿新增的功能）一律由使用者裁決**。
 
 與一般的「重寫式」UI 生成不同，本套件的設計核心是：**實作與判定分離、每一步以證據把關**，改版完成後既有團隊可以繼續在同一份程式碼上開發功能。
 
@@ -12,11 +12,12 @@
 
 ## 核心特性
 
-- **七階段流程**：準備 → 基準建立（含功能對照閘門）→ 設計與功能取捨決策點 → 實作 → 視覺迴圈（最多 3 輪）→ 功能回歸＋程式審核 → 交付（含功能取捨清單）。
+- **七階段流程**：準備 → 基準建立（含功能對照閘門）→ 設計與功能取捨決策點 → 實作 → 視覺迴圈（最多 3 輪）→ 功能回歸＋程式審核 → 交付（含功能取捨 FQ／NF 清單）。
 - **分工由權限強制**：所有 agent 的 `subagent` 權限一律 `deny *`，只有 orchestrator 能派工（且僅限 5 個完整 agent ID）——任何 agent 無法再派工繞過分工。
 - **證據導向**：視覺判定以 Playwright Chromium 截圖＋pixelmatch 比對為據，交付含 overlay／diff 圖；審核以量測值、測試結果、diff 為據，不得以主觀描述代替。
 - **功能防護（先織網再動手）**：改版前先建立功能基準——補特徵測試（舊版先通過）、寫回歸腳本、記錄測試基準線；改版後重跑對照，測試與回歸腳本項數不得少於**調整後基準**（無 FQ 核准扣除時即原始基準）、不得有失敗。
 - **功能取捨不漏接**：舊版有、新設計未涵蓋或只涵蓋部分的功能，一律以 `F-xx` 對照並開 `FQ`，由使用者在階段 1.5 裁決保留／移除／調整／另案；未裁決不得凍結，developer 不得自行刪功能；移除功能需調整測試／腳本時走「調整後基準」。
+- **新增功能不漏接**：設計稿有、舊版沒有的互動功能，一律以 `NF-xx` 建檔並開 NF 問題，由使用者裁決納入／不納入／另案；需要新 API／事件／資料流者標註「超出 UI 還原範圍」，未裁決不得實作，developer 也不得自行「照設計稿做」。
 - **可攜性**：agent 本體零專案資訊（技術棧、路徑、指令全部不寫死）；搬家＝複製資料夾＋依安裝必改清單調整＋填一份 `ui-profile.md`。
 - **環境隔離**：工具用 Node 與專案 Node 分離（不切全域、不碰專案 package.json）；瀏覽器用 Playwright 自帶 Chromium（不用系統 Chrome），與日常瀏覽環境完全隔離。
 
@@ -26,12 +27,12 @@
 
 | Agent ID | 模式 | 核心職責 |
 |---|---|---|
-| `ui-redesign/orchestrator` | primary | 七階段流程協調、功能對照閘門、派工、輪數控制、dev server 管理、worktree 程序、交付 |
-| `ui-redesign/design-analyzer` | subagent | 解析設計素材 → 設計規格（來源等級含使用者裁決）、design tokens、元件對照（含功能涵蓋對照）、待確認清單（PQ／FQ） |
-| `ui-redesign/developer` | subagent | 依設計規格實作 UI，優先重用既有元件；實作前做功能取捨預檢；禁改 `.opencode/**`、`.env*` |
-| `ui-redesign/visual-qa` | subagent | 截圖比對設計素材 → 視覺差異報告（`VERDICT: PASS/FAIL`＋證據圖；排除設計外保留項） |
-| `ui-redesign/functional-qa` | subagent | 建立功能基準（`F-xx` 固定 ID＋特徵測試＋回歸腳本）＋改版後功能回歸（含功能取捨對照） |
-| `ui-redesign/reviewer` | subagent | 程式品質、樣式污染、XSS/安全、需求符合度五步驟驗證（含功能取捨查核）、非預期改動偵測 |
+| `ui-redesign/orchestrator` | primary | 七階段流程協調、功能對照閘門（雙向）、派工、輪數控制、dev server 管理、worktree 程序、交付 |
+| `ui-redesign/design-analyzer` | subagent | 解析設計素材 → 設計規格（來源等級含使用者裁決）、design tokens、元件對照（含功能涵蓋與新增功能對照）、待確認清單（PQ／FQ／NF） |
+| `ui-redesign/developer` | subagent | 依設計規格實作 UI，優先重用既有元件；實作前做功能取捨預檢（FQ／NF）；禁改 `.opencode/**`、`.env*` |
+| `ui-redesign/visual-qa` | subagent | 截圖比對設計素材 → 視覺差異報告（`VERDICT: PASS/FAIL`＋證據圖；排除設計外保留項、NF 已裁決未出現項〔不納入／另案／`x2`〕） |
+| `ui-redesign/functional-qa` | subagent | 建立功能基準（`F-xx` 固定 ID＋特徵測試＋回歸腳本）＋改版後功能回歸（含功能取捨與新增功能對照） |
+| `ui-redesign/reviewer` | subagent | 程式品質、樣式污染、XSS/安全、需求符合度六步驟驗證（含功能取捨與新增功能查核）、非預期改動偵測 |
 
 ## 檔案結構
 
@@ -123,11 +124,11 @@ UI_Redesign_Agent_Team/
 ├── functional-baseline.md     功能基準（F-xx 固定 ID＋調整後基準；進版控）
 ├── design-spec.md             設計規格（每項標註來源等級；含設計外保留／另案維持現狀）
 ├── design-tokens.json         具名 token（顏色、字級、間距、圓角…，框架無關）
-├── component-mapping.md       新舊元件對照＋功能涵蓋對照（Feature Parity）
-├── pending-questions.md       待確認清單＋使用者決策紀錄（PQ 設計決策／FQ 功能取捨）
-├── visual-report.md           最終視覺報告（含設計外保留項、需要確認）
-├── functional-report.md       功能回歸報告（含調整後基準與功能取捨對照）
-├── code-review.md             程式審核報告（含功能取捨核對與調整後基準核對）
+├── component-mapping.md       新舊元件對照＋功能涵蓋對照（Feature Parity）＋新增功能對照（New Feature）
+├── pending-questions.md       待確認清單＋使用者決策紀錄（PQ 設計決策／FQ 功能取捨／NF 新增功能）
+├── visual-report.md           最終視覺報告（含設計外保留項、NF 已裁決未出現項、需要確認）
+├── functional-report.md       功能回歸報告（含調整後基準、功能取捨與新增功能對照）
+├── code-review.md             程式審核報告（含功能取捨／新增功能核對與調整後基準核對）
 ├── scripts/                   客製回歸腳本（可累積成回歸資產）
 └── .artifacts/                截圖、overlay、diff PNG（gitignore）
     └── r1/、r2/ …             每輪一個子資料夾
@@ -139,6 +140,7 @@ UI_Redesign_Agent_Team/
 - **A2（URL 傳遞）**：URL 先寫入 gitignored 參數檔（`<slug>/.artifacts/url-args.json`），工具以 `--url-file` 接收檔案路徑——shell 白名單得以維持 `&;/|` 串接 deny，URL 查詢字串不需編碼。
 - **D1（產物版控）**：產物根目錄可設定；目標專案的 `.gitignore` 需依方案調整（詳見安裝指南第 11 項）。
 - **F1（功能取捨閘門）**：baseline 功能以 `F-xx` 固定編號；設計未涵蓋者一律開 `FQ` 由使用者裁決，階段 1 有功能對照閘門、階段 2 前有 developer 預檢，未裁決不得凍結或自行移除。
+- **F2（新增功能閘門）**：設計稿有、舊版沒有的互動功能以 `NF-xx` 固定編號（與 `F-xx` 分開編號空間）；一律開 NF 由使用者裁決納入／不納入／另案，需要新 API／事件／資料流者標註「超出 UI 還原範圍」。功能對照閘門為**雙向**（`F-xx` 舊→新、`NF-xx` 新→舊），納入者要有 design-spec 規格才可實作，不納入／另案者不得出現在程式與畫面。
 
 ## 已知限制
 
