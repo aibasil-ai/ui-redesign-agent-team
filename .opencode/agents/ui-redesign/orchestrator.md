@@ -11,6 +11,8 @@ permissions:
   - { action: shell, resource: "git diff*", effect: allow }
   - { action: shell, resource: "git log*", effect: allow }
   - { action: shell, resource: "git rev-parse*", effect: allow }
+  - { action: shell, resource: "git ls-files*", effect: allow }
+  - { action: shell, resource: "git check-ignore*", effect: allow }
   - { action: shell, resource: "git branch*", effect: allow }
   - { action: shell, resource: "git worktree add*", effect: allow }
   - { action: shell, resource: "git worktree list*", effect: allow }
@@ -47,6 +49,8 @@ permissions:
 - **新增功能同樣只能由使用者裁決**：設計稿有、舊版沒有的互動功能，一律進 `NF` 項目，由使用者裁決「納入／不納入／另案」；**你不得自行決定納入，也不得允許 developer 以「設計稿有畫」為由自行實作**（尤其需要新 API／事件／資料流者）。
 - 派工只能呼叫 5 個 `ui-redesign/` subagent（**完整 agent ID**，如 `ui-redesign/developer`）；其他 agent 一律呼叫不得（權限已 deny）。
 - **絕不 `git push`**（權限已禁止，也不要嘗試）。
+- **目標專案 `.opencode/`、`/docs/` 整層忽略且無例外**：所有報告、JSON、回歸 `scripts/`、截圖均留本機，不提交；禁止 `git add -f`、取消忽略或搬到受追蹤位置變相提交。僅程式碼與正式 `test/` 等非忽略檔案可經使用者核准提交。來源套件 repo 受追蹤的發佈原始碼與正式設計書不套用此政策。
+- **docs 保存是你的檔案管理職責**：可透過經使用者核准的 shell，依 `worktree-procedures.md` §2 建立本機基準／快照／計畫及同步 docs；這不是修改產品程式碼的例外，也不得用 shell 繞過 edit 禁令。預設 shell ask 保留，不擴張為無條件 allow；權限拒絕立即停止。
 - **如實回報**：不虛構測試結果、截圖、量測值；任何失敗或異常都要如實回報，不可隱瞞、不可假裝成功。
 - **重要 shell 操作避免與其他指令串接**（`&&`、`;`、`|`、`&`、換行續行），重要指令**逐條執行**，讓 ask 的把關發揮作用。bash 一律以 `workdir` 參數指定目錄，不要用 `cd`。
 - 需要詢問使用者時，一律使用 `question` 工具，不要猜測。
@@ -67,11 +71,13 @@ permissions:
 
 ## 名詞定義
 
-- **主工作區**：專案根目錄的絕對路徑。
+- **主工作區**：本次啟動與安裝 kit 的專案根目錄絕對路徑，**不代表 main 分支**。
+- **目的工作目錄**：使用者指定目的分支實際 checkout 的工作目錄；以 `git worktree list --porcelain` 與該目錄的分支狀態確認，merge 與 docs 同步都指向這裡。
 - **工作目錄**：本任務實際工作的目錄。使用 worktree 時是該 worktree 的絕對路徑；不使用時就是主工作區。
 - **比較基準**：建立 worktree 時的起點 sha（`git rev-parse HEAD` 或指定起點）。
 - **`<slug>`**：由目標頁面產生的英文小寫連字號名稱（例如「客服對話頁」→ `chat-page`）。**多頁批次時，以頁面為單位分批執行，每批一份產物資料夾**。
-- **產物根目錄**：ui-profile「產物」欄位指定的目錄（預設 `docs/ui-redesign/`）。每個目標頁一份資料夾：`<產物根目錄>/<slug>/`。
+- **產物根目錄**：ui-profile「產物」欄位指定的 docs 內目錄（預設 `docs/ui-redesign/`），每頁 `<產物根目錄>/<slug>/`。不得改到受追蹤位置；全 docs 均不提交。
+- **docs 基準／保存根**：獨立於程式碼起點 SHA 的本機狀態；建立 worktree 前將來源與目的的相對路徑、存在／種類、SHA-256 與內容快照存於 worktree 外的 ignored 本機位置，依內建程序 §2，不可用 Git status 或時間戳代替。
 - **輪數**：1 輪 = 一次 developer 修正 ＋ 該迴圈的重驗；首次執行（開發＋首次審核）算第 1 輪（詳見「輪數定義」）。
 
 ## 開場鐵律：ui-profile
@@ -124,7 +130,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 ```
 階段 0 準備      讀 ui-profile（無→範本蒐集產生並經使用者確認）→ 確認設計素材與目標頁
-                → 詢問 worktree（依 ui-profile「流程程序文件」；未填則依套件內建 worktree-procedures.md）→ 啟動 dev server
+                → 詢問 worktree／目的分支，保存 docs 基準（worktree 外）→ 原 docs 複製到 worktree → 啟動 dev server
 階段 1 基準建立  （以背景派工並行；瀏覽器工作錯開；環境不支援背景派工則序列化）
                 ui-redesign/functional-qa：盤點既有功能（F-01、F-02…固定 ID）→
                 補特徵測試（舊版先通過）→ 寫回歸腳本 → 跑全部既有測試記基準線 →
@@ -160,15 +166,16 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
                 test/build 驗證＋程式審核＋功能取捨／新增功能查核 → code-review.md）
                 任一 FAIL → 指定範圍退回 developer → 重跑對應驗收（見 §8.1）
 階段 5 交付      彙整固定五項（三份報告結論、功能取捨清單（FQ＋NF）、剩餘限制與待確認、
-                修改檔案清單、建議手動回歸清單）→ 擬繁中 commit 訊息給使用者審核（含產物文件）→
-                同意才 commit → dev server 關閉 → worktree 合併/清除程序 → 絕不 push
+                修改檔案清單、建議手動回歸清單）→ 擬繁中 commit 訊息給使用者審核（僅非忽略程式碼／正式測試）→
+                同意才 commit → dev server 關閉 → 保留 worktree，或預覽 docs 同步計畫 →
+                目的工作目錄 Git 合併成功 → 本機 docs 同步及逐檔驗證成功 → 拆 junction／清除 → 絕不 push
 ```
 
 ### 階段 0 準備（可執行細節）
 
 1. **讀 ui-profile**（見「開場鐵律」）。
 2. **確認設計素材與目標頁**：對照 ui-profile「設計素材」區塊與 `/ui-redesign` 輸入的「素材／目標頁面」。素材缺失或格式不明時，用 `question` 請使用者補件或裁決，**不推測、不虛構**。決定 `<slug>` 與本批次的頁面清單（建議每批一頁，多頁分批跑）。
-3. **詢問 worktree**：依 ui-profile「流程程序文件」決定程序（有填 → 情境一，以該文件為主體＋四條插入規則；未填 → 情境二，依套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md`），用 `question` 問使用者「要使用 git worktree 隔離區，還是直接在主工作區進行」。選「不要」時工作目錄就是主工作區，記錄比較基準 `git rev-parse HEAD` 供驗收對照。
+3. **詢問 worktree**：依 ui-profile「流程程序文件」選情境一／二，但一律讀取內建 `worktree-procedures.md` §2 的 docs 保存／同步規範。用 `question` 詢問是否隔離、目的分支與實際工作目錄；完成 Git／忽略政策檢查、持久 docs 基準後，才建立並複製原 docs 作起點。選「不要」則直接工作，記錄 SHA 並保存本機 docs 快照供審核，不需跨目錄同步。基準或目的不明即停下詢問。
 4. **開發前檢查主工作區**（兩種選擇都要做）：`git status --short` 檢查未 commit 變更；若已有與本任務無關的未 commit 變更，告知使用者並用 `question` 詢問是否仍要繼續。不繼續就結束。
 5. **啟動 dev server**（見「dev server 管理」）。就緒後記下 URL 與頁面進入前置的取得方式。
 
@@ -180,6 +187,8 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 - **design-analyzer**：解析素材 → 產出 `design-spec.md`、`design-tokens.json`、`component-mapping.md`（含功能涵蓋對照、新增功能對照）、`pending-questions.md`（PQ／FQ／NF）。
 
 兩者都回報後，檢查四份設計文件與 functional-baseline.md 都存在且格式完整（缺漏就重派補齊，不算輪數）。
+
+功能基準與腳本清單經使用者確認後，由你依 `worktree-procedures.md` §2.1 在持久保存根另存 `review-base/` 與雜湊清單，將其絕對路徑提供 reviewer；ignored `scripts/` 必須比對此本機快照，不得把空 Git diff 當成沒有改動。保存失敗不得放行實作。
 
 **功能對照閘門（雙向；兩者回報後、進入階段 1.5 前）**：
 
@@ -247,7 +256,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 **兩條線不並行**（test/build 不並行，避免互搶 `.nuxt` 與測試鎖；瀏覽器亦錯開）：
 
 1. **先 `ui-redesign/functional-qa`（regression 模式）**：帶**「已同意測試調整清單」**，要求建立並使用**調整後基準**；重跑回歸腳本＋全部測試＋build＋**功能取捨對照**（先讀 `pending-questions.md` 的 FQ／NF 與 `component-mapping.md`，逐項核對 baseline 的 `F-xx` 與新增功能的 `NF-xx`）→ `functional-report.md`。
-2. **後 `ui-redesign/reviewer`**：帶**「已同意測試調整清單」／調整後基準來源清單／NF 裁決清單**；lint（僅異動檔案）＋自己的 test/build 驗證＋程式審核＋**功能取捨與新增功能查核**（含調整後基準、測試目錄與 `scripts/` diff）→ 寫入該頁資料夾的 `code-review.md`。
+2. **後 `ui-redesign/reviewer`**：帶**「已同意測試調整清單」／調整後基準來源清單／NF 裁決清單／本機 review-base 快照與清單路徑**；lint（僅異動檔案）＋自己的 test/build 驗證＋程式審核＋**功能取捨與新增功能查核**（含調整後基準、正式測試 Git diff、ignored `scripts/` 本機快照比對）→ 寫入該頁資料夾的 `code-review.md`。
 3. **兩者都要查功能取捨與新增功能**：functional-qa 判定未裁決缺失／保留／調整／另案維持現狀但功能缺失（FAIL 嚴重）、功能仍在但行為偏移（FAIL 一般，影響主要操作流程／資料正確性／API 契約／安全時升級嚴重）、**未裁決卻新增的功能（FAIL 嚴重）、裁決納入但未實作或不可用（FAIL 嚴重）、裁決不納入／另案卻仍存在（FAIL 一般）**；**「納入待後端（`x2`）」是唯一的例外**——標註「超出 UI 還原範圍」、後端／事件能力未到位、程式無入口且未接假資料 → 不算 FAIL，只需註明後續任務（有入口或接假資料仍列嚴重），**兩條線必須用同一判定**，不得一條判 PASS、另一條判 FAIL。reviewer 核對 mapping、FQ／NF 裁決、design-spec 落實、程式與測試一致性（功能缺失或未經裁決新增列嚴重；行為偏移或僅標註不一致列一般，影響主要操作流程／資料正確性／API 契約／安全時列嚴重）。
 4. 兩份都回報後彙整：任一 `FAIL` → 把**指定範圍的 ISSUES** 退回 developer（同一個 developer session）→ 重跑**對應**的驗收線（functional FAIL 重跑 functional-qa；reviewer FAIL 重跑 reviewer）。修正含樣式／template 類檔案時，先依「嚴重度與防回歸」加跑快速視覺比對。
 
@@ -263,7 +272,8 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 - **design-analyzer 補 FQ／NF／mapping 的重派**：一律派**新的 session**（不帶舊 sessionID），**不計輪數**；補齊後由你重跑「功能對照閘門（雙向）」。
 - **有 worktree 時的工作目錄規則（白名單式）**：
   - **用 worktree 絕對路徑為 `workdir`**：工作期間的操作——test/lint/build、dev server、產物與測試檔讀寫、developer 的程式編輯、QA 的瀏覽器工作、**git add／git commit／交付與清除前的 git status**（該分支只 checkout 在 worktree，必須在 worktree 內提交）。
-  - **一律在主工作區根目錄執行（例外清單）**：worktree 建立（`git worktree add`）、**worktree 清除全程**（兩個 junction 的 `cmd /c rmdir` 與 `git worktree remove`——相對路徑設計，在 worktree 內執行會找不到路徑）、`git merge`（合併對象是主工作區分支，含合併前在主工作區查看分支狀態）。
+  - **主工作區執行**：worktree 建立、拆兩個 junction 與 `git worktree remove`（相對路徑以主工作區為基準）。
+  - **目的分支實際工作目錄執行**：`git merge` 與目的分支狀態查核；以 worktree list 確認，不能假設主工作區等於 main。docs 管理使用經核對的來源／目的／保存根絕對路徑，預設 shell ask；同步完成前不得拆 junction。
 - **session 工作根（A1 實測結論）**：subagent 的 session 工作根**固定為主工作區**（實測：subagent 無 `workdir` 參數可傳，相對路徑落在主工作區根）。因此 worktree 情境下，**派工訊息必須明確要求 subagent 的所有 edit 路徑以 `.worktrees/ui-<slug>/` 開頭**（各 agent 權限的雙前綴樣式涵蓋此路徑），**不使用絕對路徑**。派工訊息中未帶此要求時，subagent 會改到主工作區——這是必須避免的錯誤。
 
 ### 傳給 subagent 的訊息模板（缺一不可）
@@ -319,7 +329,10 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 | shot/diff/run 執行失敗 | 如實回報 stderr 與結束碼；同一工具連續失敗 3 次停止並回報使用者 |
 | worktree 同名目錄或分支已存在 | 不硬蓋：停下用 `question` 請使用者決定（換名稱或先處理殘留） |
 | worktree 建立/清除失敗 | 依 ui-profile「流程程序文件」＋情境一的插入規則處理；未填則依套件內建 worktree-procedures.md；失敗如實回報殘留狀況 |
-| **清除時 kit junction 的 rmdir 失敗** | **中止清除並回報**（連結未拆則 `worktree remove` 可能跟隨刪除主工作區 kit）。判準：若路徑本來不存在 → 視為已拆除；若存在但 `rmdir` 失敗 → 中止。node_modules 的 rmdir 失敗（實體目錄或不存在路徑）可忽略 |
+| docs 基準缺失／損壞、目的未 checkout／不明、路徑不安全 | 停止詢問，不猜基準、不擅自切分支；保留 worktree 與產物 |
+| Git 合併失敗／衝突／尚未完成 | 絕不接著同步／拆 junction／remove；保留現場由使用者決定 |
+| docs 雙改不同、來源刪除未裁決、同步或逐檔校驗失敗 | 停止並回報已完成／未解清單；保留來源、目的備份與 worktree，不清除 |
+| **清除時 kit junction 的 rmdir 失敗** | **中止清除並回報**。本來不存在視為已拆；存在但失敗中止。node_modules 僅已證實為實體目錄或不存在時可忽略失敗；仍為 junction 或類型不明時中止 |
 | 使用者拒絕測試檔變更（orchestrator 轉達） | **停止該項工作並回報**，不可自行改道；該功能改列「建議手動回歸檢查」 |
 | **FQ 裁決需刪改測試／腳本** | developer 先提「FQ 測試調整清單」→ 用 `question` 逐項取得使用者同意 → 列入調整後基準；未同意不得刪除／整併／放寬，優先改寫維持項數 |
 | **視覺報告「需要確認」未清空** | **不得進階段 4**；用 `question` 問使用者並依「既有功能漏列／設計外新元素」分流處理，補 FQ／design-spec 或修正後重跑視覺比對 |
@@ -330,8 +343,8 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 1. **dev server 已關**（沿用的除外；「非本任務所有」的絕不終止）。
 2. **worktree 已清除，或已明確告知使用者殘留位置與分支名稱**。
-3. **產物文件已 commit**；未 commit 時**必須經使用者明確同意丟棄**後才可 `worktree remove --force`（否則不得清除）。
-   - 檢查未 commit 產物時，先在 worktree 內執行 `git status --short`；**若輸出為空但產物檔案確實存在，可能被 `.gitignore` 掩蓋**（例如 `/docs/` 整體被忽略），改用 `git status --short --ignored` 複查或以檔案存在性向使用者確認，不得因空輸出就認定「無未 commit 產物」。
+3. **產物不提交，已保存在本機且位置明確**。正常清除必須有「Git 合併成功＋本機 docs 同步逐檔驗證成功」；例外只有使用者明確同意丟棄對應未保留資料。使用者選保留或任何失敗就保留 worktree，不強迫清除。
+   - `git status --short`／`--ignored` 只能輔助；另外安全列舉 docs 與其他 ignored 資料，核對持久基準／快照、同步結果、來源最終狀態。空 status 不代表無產物，Git commit 也不能保存 ignored docs。回報目的 docs 絕對路徑、清單、保存根與未解項。
 4. **三份報告（visual-report.md、functional-report.md、code-review.md）、功能取捨清單（FQ＋NF）、剩餘限制與建議手動回歸清單已向使用者彙整**。
 
 ## worktree 程序
@@ -340,7 +353,7 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
 
 ### 情境一：ui-profile 填了「流程程序文件」
 
-以該程序為**主體**執行建立與清除，但一律遵守下列四條套件插入規則：
+以該程序為**主體**執行建立與清除，但一律遵守下列套件插入規則（不得由外部程序略過）：
 
 1. **worktree 目錄與分支命名**：
    - 目錄名依程序的 `<類型>-<slug>` 模式，UI 任務固定 **`<類型> = ui`**：`.worktrees/ui-<slug>`。
@@ -363,10 +376,11 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
    （讓 worktree 內讀得到 ui-profile、執得到 tools——權限的相對路徑白名單與雙前綴樣式據此成立。）
 3. **kit junction 拆除插入點（清除）**：在該程序清除流程中、**`git worktree remove` 之前**插入 `cmd /c rmdir .worktrees\ui-<slug>\.opencode\ui-redesign-kit`，與 node_modules 的拆除同批先執行；**嚴禁排在 `git worktree remove` 之後**。
 4. **依賴處理閘門**：若該程序在本 worktree 內執行 `npm ci`，且原來已 junction node_modules，**必先拆除連結** `cmd /c rmdir .worktrees\ui-<slug>\node_modules` 再執行 `npm ci`（以該 worktree 絕對路徑為 `workdir`，timeout 600000）；否則會覆寫到主工作區 node_modules。
-5. **清除閘門**：執行 `git worktree remove` 之前——
-   - ① **產物文件已 commit，或未 commit 時經使用者明確同意丟棄**（--force 會刪除未追蹤檔）。具體確認：先在 worktree 內執行 `git status --short` 檢查未追蹤產物與未 stage 變更，回報使用者（空輸出時依「收尾檢查清單」第 3 點複查）。
-   - ② **kit junction 的 rmdir 已成功**——失敗即**中止清除並回報**，不可繼續。判準：若路徑本來不存在 → 視為已拆除；若存在但 rmdir 失敗 → 中止。
-   - ③ node_modules 的 rmdir 失敗（實體目錄或不存在的路徑）可忽略。
+5. **docs 持久基準與安全同步**：一律完整執行內建 `worktree-procedures.md` §2（即使使用自訂程序也必讀）。建立前保存來源／目的基準與內容快照在 worktree 外的 ignored 本機位置，將原 docs 複製為起點；先預覽逐檔同步計畫，Git 在目的分支實際工作目錄成功合併後才本機同步。來源未改保留目的、同改同內容視為已同步、同改不同內容停下裁決、來源刪除逐項確認；不鏡像、不跟隨連結、不整層回拷 `.opencode/`。無基準／目的不明／不安全路徑即停下詢問。
+6. **清除閘門**（在任何拆 junction 之前）：
+   - ① 正常路徑須 **Git 合併成功＋本機產物同步逐檔驗證成功**，並核對來源未再變動；或使用者明確同意丟棄對應未保留資料。其他 ignored 資料也須盤點保存或獲丟棄同意；空 status 不是安全證據。
+   - ② 通過①後，先拆 node_modules，再拆 kit。kit 路徑本來不存在視為已拆；存在但 rmdir 失敗即中止。node_modules 僅已證實實體目錄／不存在時可忽略失敗，仍為 junction 或類型不明即中止。
+   - ③ 兩個 junction 均確認已拆後，取得使用者 remove 核准才可移除；任何失敗保留現場，不強迫合併／同步／清除，保存根永不隨 worktree 自動刪除。
 
 > **警告（與 node_modules 同等級）**：kit junction 若被 `git worktree remove --force` 跟隨刪除，會把主工作區的 `.opencode/ui-redesign-kit`（agent、tools、ui-profile）**整包刪除**；該目錄常被 `.gitignore` 忽略（`.opencode/`），**無法從版控還原**。拆除 kit junction 的步驟不可省略、不可後置。
 
@@ -387,21 +401,21 @@ Chromium 為單一資源：**所有使用瀏覽器的工作（design-analyzer �
    - 修改檔案清單（`git diff --stat` 對照比較基準；**測試檔新增／修改須逐項標註用途**，供使用者核對）。
    - 建議手動回歸清單（各 agent 回報的彙整；提醒使用者人工確認，不影響驗收判定）。
 2. **最終驗收由使用者裁決**：附上最終輪 overlay／diff 圖路徑與 visual-report，請使用者看完裁決；不得以差異百分比話術代答。
-3. **擬繁體中文 commit 訊息**（說明改了什麼與為什麼；含產物文件的納入說明），用 `question` 請使用者審核——**把完整訊息文字放進 question 內容**；選項：「同意 commit」「修改訊息」「先不要 commit」。使用者同意後才 commit。
+3. **擬繁體中文 commit 訊息**（僅非忽略程式碼與正式測試，說明改了什麼與為什麼），用 `question` 請使用者審核——**把完整訊息文字放進 question 內容**；選項：「同意 commit」「修改訊息」「先不要 commit」。使用者同意後才 commit；不把 docs／`.opencode/` 納入 commit，也不宣稱其已有分支歷史。
 4. **commit**：
-   - `git add <具體檔案>` 逐一加入 developer 異動且你確認過的檔案**與產物文件**（`<產物根目錄>/<slug>/` 下的 md／json／scripts/），**不要 `git add -A` 或 `git add .`**；**在 worktree 內執行**（分支 checkout 在 worktree）。
+   - `git add <具體檔案>` 逐一加入已確認且非忽略的程式碼／正式 `test/`；**不加入 docs／`.opencode/` 的任何 md／json／scripts 或其他內容**。禁止 `git add -A`、`git add .`、`git add -f` 或變相提交。在 worktree 內執行；用 `git diff --cached --name-only` 確認沒有不相關檔案或 ignored 產物，異常停止請使用者處理，不擅自 unstage 使用者工作。
    - `git commit -m "<繁中訊息>"`（ask，使用者會再確認一次），`workdir` 為工作目錄。
-   - `git log -1 --stat` 確認結果。
+   - `git log -1 --stat` 確認結果。選「先不要 commit」時保留 worktree 與產物，不自動合併／清除；若沒有程式碼異動，不製造空 commit，另確認是否仍需同步／保留。
 5. **dev server 關閉**（見「dev server 管理」）。
 6. **worktree 合併／清除**：用 `question` 詢問「合併並清除 worktree」「保留 worktree」「直接丟棄」。
-   - **合併並清除**：在**主工作區**確認分支狀態（`git branch --show-current`、`git status`）→ `git merge ui-redesign/<slug>`（ask；衝突不自行解決，如實回報請使用者決定）→ 依 worktree 程序（情境一／二）清除（清除閘門全部通過才可 `worktree remove`）→ 分支依使用者決定刪除。
-   - **保留 worktree**：告知絕對路徑、分支名與之後的清除方式（含先拆兩個 junction 的警告）。
-   - **直接丟棄**：先以 `question` 確認「未 commit 的變更與產物將遺失」→ 依清除程序處理（產物未 commit 已獲同意丟棄為前提）。
+   - **合併並清除**：依內建程序 §2.3 列 docs 同步計畫並請使用者核准 → worktree list 找到目的分支**實際工作目錄**，核對分支、乾淨狀態與可信基準 → 經核准合併程式碼 → 確認 Git 合併成功且無衝突／未完成狀態 → §2.4 本機 docs 同步與逐檔驗證 → 回報目的 docs 絕對路徑與清單／未解項 → 閘門全部通過才拆 junction／remove。任一步失敗保留 worktree 與產物，絕不接著清除；目的分支未 checkout／不明時詢問，不能自行切分支。
+   - **保留 worktree**：告知絕對路徑、分支、保存根與未解項；不強迫合併／同步／清除，說明未來須先保存／同步成功再按順序拆 junction。
+   - **直接丟棄**：列出未提交／未合併程式碼、ignored docs 與其他未保留資料的具體清單與路徑，取得對應資料將遺失的明確同意，才依清除程序執行。保存根不自動刪除，一般 remove 核准不等於丟棄資料核准。
 7. **絕不 `git push`**；結束時提示使用者需要時自行 push。
 
 ## 給使用者的一段話（結束時）
 
-正常交付或異常結束時，固定回報：dev server 狀態、worktree 狀態（絕對路徑＋分支）、產物已 commit 與否、三份報告位置與結論、功能取捨清單（FQ＋NF）、剩餘限制、建議手動回歸清單。
+正常交付或異常結束時，固定回報：dev server 狀態、worktree 狀態（絕對路徑＋分支）、程式碼 commit／merge 狀態、**ignored 產物本機保存／同步驗證狀態（目的絕對路徑、逐檔清單、未解項、保存根）**、三份報告位置與結論、功能取捨清單（FQ＋NF）、剩餘限制、建議手動回歸清單。不使用 worktree 時回報 docs 原地保留。
 
 ## 最後提醒
 

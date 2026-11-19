@@ -121,7 +121,7 @@ UI_Redesign_Agent_Team/
 
 ```
 <產物根目錄>/<頁面slug>/
-├── functional-baseline.md     功能基準（F-xx 固定 ID＋調整後基準；進版控）
+├── functional-baseline.md     功能基準（F-xx 固定 ID＋調整後基準；留本機）
 ├── design-spec.md             設計規格（每項標註來源等級；含設計外保留／另案維持現狀）
 ├── design-tokens.json         具名 token（顏色、字級、間距、圓角…，框架無關）
 ├── component-mapping.md       新舊元件對照＋功能涵蓋對照（Feature Parity）＋新增功能對照（New Feature）
@@ -130,15 +130,19 @@ UI_Redesign_Agent_Team/
 ├── functional-report.md       功能回歸報告（含調整後基準、功能取捨與新增功能對照）
 ├── code-review.md             程式審核報告（含功能取捨／新增功能核對與調整後基準核對）
 ├── scripts/                   客製回歸腳本（可累積成回歸資產）
-└── .artifacts/                截圖、overlay、diff PNG（gitignore）
+└── .artifacts/                截圖、overlay、diff PNG（同其他產物均留本機）
     └── r1/、r2/ …             每輪一個子資料夾
 ```
+
+**目標前端專案**的 `.opencode/`、`/docs/` 整層忽略、無例外，文字／JSON／`scripts/`／截圖全部不提交；不得強制 add、取消忽略或搬到受追蹤位置變相提交。只有程式碼與正式 `test/` 等非忽略檔案可經核准 commit。**本套件來源 repo** 的 agent、kit 發佈原始碼與正式設計書仍受追蹤，不改成整層忽略。
+
+ignored docs 沒有分支歷史，Git 合併成功後仍須**本機檔案同步**到目的分支實際工作目錄的 docs；不能假設主工作區是 main。建立 worktree 前複製原 docs 作起點，並在 worktree 外保存來源／目的基準與內容快照；合併前預覽計畫，目的單改保留、雙改不同停下裁決、來源刪除逐項確認。同步逐檔驗證成功（或明確同意丟棄對應未保留資料）後，才拆 junction／remove；失敗保留現場。完整程序見 [`worktree-procedures.md`](.opencode/ui-redesign-kit/worktree-procedures.md)；`.opencode/` 不整層回拷。
 
 ## 重要設計決策
 
 - **A1（worktree 路徑策略，實測定案）**：subagent 的 session 工作根固定為主工作區（無 `workdir` 參數可傳）；worktree 情境下 edit 一律以 `.worktrees/ui-<slug>/` 開頭，權限雙前綴樣式涵蓋此路徑。
 - **A2（URL 傳遞）**：URL 先寫入 gitignored 參數檔（`<slug>/.artifacts/url-args.json`），工具以 `--url-file` 接收檔案路徑——shell 白名單得以維持 `&;/|` 串接 deny，URL 查詢字串不需編碼。
-- **D1（產物版控）**：產物根目錄可設定；目標專案的 `.gitignore` 需依方案調整（詳見安裝指南第 11 項）。
+- **D1（本機產物保存）**：目標 `.opencode/`、`/docs/` 全忽略、無例外；產物不提交。worktree 外記錄持久基準，Git 成功合併後另做安全本機 docs 同步及逐檔驗證，通過才清除；詳見安裝指南第 8／11 項與內建程序 §2。
 - **F1（功能取捨閘門）**：baseline 功能以 `F-xx` 固定編號；設計未涵蓋者一律開 `FQ` 由使用者裁決，階段 1 有功能對照閘門、階段 2 前有 developer 預檢，未裁決不得凍結或自行移除。
 - **F2（新增功能閘門）**：設計稿有、舊版沒有的互動功能以 `NF-xx` 固定編號（與 `F-xx` 分開編號空間）；一律開 NF 由使用者裁決納入／不納入／另案，需要新 API／事件／資料流者標註「超出 UI 還原範圍」。功能對照閘門為**雙向**（`F-xx` 舊→新、`NF-xx` 新→舊），納入者要有 design-spec 規格才可實作，不納入／另案者不得出現在程式與畫面。
 

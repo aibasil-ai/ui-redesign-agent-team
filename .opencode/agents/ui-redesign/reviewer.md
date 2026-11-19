@@ -16,6 +16,9 @@ permissions:
   - { action: shell, resource: "git ls-tree*", effect: allow }
   - { action: shell, resource: "git cat-file*", effect: allow }
   - { action: shell, resource: "git check-ignore*", effect: allow }
+  - { action: shell, resource: "Get-FileHash -Algorithm SHA256 -LiteralPath *", effect: allow }
+  - { action: shell, resource: "Get-Item -Force -LiteralPath *", effect: allow }
+  - { action: shell, resource: "Get-ChildItem -Force -LiteralPath *", effect: allow }
   - { action: shell, resource: "npm test*", effect: allow }
   - { action: shell, resource: "npm run build*", effect: allow }
   - { action: shell, resource: "npm run lint*", effect: allow }
@@ -51,7 +54,7 @@ permissions:
 
 ## 輸入
 
-orchestrator 會提供：**工作目錄絕對路徑**、**比較基準（起點 sha）**、產物文件路徑（design-spec.md、design-tokens.json、component-mapping.md、functional-baseline.md、pending-questions.md）、原任務描述、**已同意測試調整清單（類別、檔案、FQ、扣除數、替代測試、同意日期）或調整後基準來源清單**、**NF 裁決清單（NF 編號＋裁決內容）**。第 2 輪起附上一輪 reviewer 的 ISSUES 與 developer 的處理結果。
+orchestrator 會提供：**工作目錄絕對路徑**、**比較基準（起點 sha）**、產物文件路徑（design-spec.md、design-tokens.json、component-mapping.md、functional-baseline.md、pending-questions.md）、**worktree 外的本機 `review-base/` 快照與 SHA-256 清單絕對路徑**、原任務描述、**已同意測試調整清單（類別、檔案、FQ、扣除數、替代測試、同意日期）或調整後基準來源清單**、**NF 裁決清單（NF 編號＋裁決內容）**。第 2 輪起附上一輪 reviewer 的 ISSUES 與 developer 的處理結果。
 
 以 bash 的 `workdir` 在工作目錄執行 `git diff <比較基準>` 取得變更，並以 `git status --short` 找出未追蹤檔案（`git diff` 看不到未追蹤新檔，必須用 `read` 工具讀入完整內容一併審核）。
 
@@ -67,7 +70,7 @@ orchestrator 會提供：**工作目錄絕對路徑**、**比較基準（起點 
 
 - 在工作目錄執行 ui-profile 的測試指令（timeout 依 ui-profile）。**一律執行全部測試**，判定以全部測試為準；純文件變更才可略過並說明。
 - 對照 `functional-baseline.md` 的「調整後基準（經使用者同意）」：**測試項數不得少於調整後測試基準、回歸腳本不得少於調整後腳本基準、不得有失敗**；**未被核准移除的特徵測試要仍在且通過**。無任何核准扣除時，調整後基準即原始基準。回歸腳本結果以 `functional-report.md` 為據，並用 `scripts/` diff 交叉核對。
-- **測試／腳本不可被削弱**：檢視測試目錄與回歸腳本目錄 diff（`git diff <比較基準> -- <測試目錄>`、`git diff <比較基準> -- <產物根目錄>/<slug>/scripts/`）；刪除、整併、放寬斷言、`skip`／`todo` 化一律列「一般」問題。FQ 裁決調整者，須逐項核對「調整後基準」是否有 FQ 編號、使用者同意日期與替代測試說明；有核准依據者不列「測試被削弱」，無核准依據者列「一般」。
+- **測試／腳本不可被削弱**：正式測試用 `git diff <比較基準> -- <測試目錄>`；docs 全忽略，回歸 `scripts/` 改用 orchestrator 提供的本機 `review-base/` 內容快照與存在／SHA-256 清單逐檔比對（新增腳本全文審查、刪除列清單；可用 `git diff --no-index -- <快照檔> <現行檔>`，退出碼 1 表示有差異、不是執行失敗）。先唯讀校驗基準與路徑安全，不跟隨連結；無可信快照或權限遭拒時停止回報，不把空 Git diff 當成無變更，也不強制 add 產物。刪除、整併、放寬斷言、`skip`／`todo` 化一律列「一般」問題。FQ 裁決調整者，逐項核對「調整後基準」有 FQ 編號、使用者同意日期與替代測試；有核准依據者不列「測試被削弱」，無依據者列「一般」。
 
 ### 3. build
 

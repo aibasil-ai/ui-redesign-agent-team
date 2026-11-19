@@ -122,8 +122,9 @@
 |---|---|
 | **產物根目錄** | `<待填>`（例：`docs/ui-redesign`） |
 
-> **預設為 `docs/ui-redesign`**。改變此值時，必須同步「安裝指南.md」第 3 項（把 6 個 agent 檔案權限規則中的 `<產物根目錄>` 字串替換）。
-> 產物結構（由團隊自動產生）：`<產物根目錄>/<頁面slug>/` 下有 functional-baseline.md、design-spec.md、design-tokens.json、component-mapping.md、pending-questions.md、visual-report.md、functional-report.md、code-review.md、scripts/、.artifacts/（截圖，gitignored，不進版控）。
+> **預設為 `docs/ui-redesign`**。改變此值仍須位於 `docs/` 之內，並依安裝指南第 3 項同步 6 個 agent 權限規則。
+> 產物結構：`<產物根目錄>/<頁面slug>/` 下有 functional-baseline.md、design-spec.md、design-tokens.json、component-mapping.md、pending-questions.md、visual-report.md、functional-report.md、code-review.md、scripts/、.artifacts/。**目標 `.opencode/`、`/docs/` 全部忽略、無例外**；禁止強制 add、取消忽略或搬移產物變相提交。僅程式碼與正式 `test/` 等非忽略檔案可經核准提交。
+> **保存與同步政策**：建立 worktree 前，在 worktree 外的 ignored 本機位置保存來源／目的 docs 完整路徑、存在狀態、SHA-256 與內容快照，並將原 docs 複製到 worktree。ignored docs 無分支歷史，Git 合併成功後另以本機檔案同步到目的分支實際工作目錄（以 worktree list 確認）；目的單改保留、雙改不同停止裁決、來源刪除逐項確認，不跟隨 junction／symlink、不整層回拷 `.opencode/`。同步逐檔校驗成功或明確同意丟棄對應資料後，才可按順序拆 junction／remove；失敗保留現場。完整程序見 `worktree-procedures.md` §2。
 
 ## 11. 流程程序文件（可選）
 
@@ -131,7 +132,7 @@
 |---|---|
 | 路徑 | `<待填>`（例：`.opencode/my-worktree-guide.md`）。**兩個選項**：①填自己專案的程序文件 → 以該文件為主體＋套件插入規則；②**留空** → orchestrator 依套件內建 `.opencode/ui-redesign-kit/worktree-procedures.md` 執行（可直接修改該檔微調程序） |
 
-> 引用任何外部程序時，套件的四條插入規則（worktree 命名 `ui-<slug>`／分支 `ui-redesign/<slug>`、kit junction 插入與拆除、清除閘門）**一律適用**——詳見 orchestrator 指令的「worktree 程序」與「安裝指南.md」。
+> 引用任何外部程序時，套件插入規則（worktree 命名、kit junction 插入與拆除、依賴閘門、docs 持久基準與安全同步、清除閘門）**一律適用**——詳見 orchestrator「worktree 程序」與 `worktree-procedures.md` §2；外部程序不得跳過。
 
 ## 12. 其他
 
